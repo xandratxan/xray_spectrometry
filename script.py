@@ -16,38 +16,35 @@ class Spectrum:
 
     def interpolate(self, new_energies, log_scale=False, method='Akima1D'):
         """Interpolates the spectrum to a new set of energy values."""
+
+        # Prepare interpolation input data in terms of the interpolation scale
         if log_scale:
-            # Case 2: interpolate using log scale for the spectrum and new energies using akima
             self.apply_log_transform()
-            log_new_energies = [math.log(e) for e in new_energies]
-
-            # https://docs.scipy.org/doc/scipy/tutorial/interpolate.html
-            if method=='CubicSpline':
-                interpolator = CubicSpline(self.log_energy, self.log_values)
-            elif method=='PchipInterpolator':
-                interpolator = PchipInterpolator(self.log_energy, self.log_values)
-            elif method=='Akima1D':
-                interpolator = Akima1DInterpolator(self.log_energy, self.log_values)
-            else:
-                raise ValueError('Interpolation methods: CubicSpline, PchipInterpolator and Akima1D')
-
-            log_interpolated_values = interpolator(log_new_energies)
-
-            interpolated_values = [math.exp(v) for v in log_interpolated_values]
+            energies, values = self.log_energy, self.log_values
+            new_energies = [math.log(e) for e in new_energies]
         else:
-            # Case 1: interpolate using linear scale for the spectrum and new energies using akima
-            # https://docs.scipy.org/doc/scipy/tutorial/interpolate.html
-            if method == 'CubicSpline':
-                interpolator = CubicSpline(self.energy, self.values)
-            elif method == 'PchipInterpolator':
-                interpolator = PchipInterpolator(self.energy, self.values)
-            elif method == 'Akima1D':
-                interpolator = Akima1DInterpolator(self.energy, self.values)
-            else:
-                raise ValueError('Interpolation methods: PchipInterpolator CubicSpline, and Akima1D')
+            energies, values = self.energy, self.values
+            new_energies = new_energies
 
-            interpolated_values = interpolator(new_energies)
+        # Interpolate using one of the available methods. See
+        # https://docs.scipy.org/doc/scipy/tutorial/interpolate.html
+        if method == 'CubicSpline':
+            interpolator = CubicSpline(energies, values)
+        elif method == 'PchipInterpolator':
+            interpolator = PchipInterpolator(energies, values)
+        elif method == 'Akima1D':
+            interpolator = Akima1DInterpolator(energies, values)
+        else:
+            raise ValueError('Interpolation methods: CubicSpline, PchipInterpolator and Akima1D')
+        interpolated_values = interpolator(new_energies)
 
+        # Prepare interpolation output data in terms of the interpolation scale
+        if log_scale:
+            interpolated_values = [math.exp(v) for v in interpolated_values]
+        else:
+            interpolated_values = interpolated_values
+
+        # Return spectrum
         return Spectrum(new_energies, interpolated_values)
 
     def calculate_hvl(self):
