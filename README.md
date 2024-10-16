@@ -433,3 +433,131 @@ Example Usage:
 The main function demonstrates how to create a Spectrum object, apply logarithmic transformation, interpolate to new energy values, and calculate the HVL.
 
 This approach encapsulates the functionality within a single class, making the code more modular and easier to manage. If you have any questions or need further adjustments, feel free to ask!
+
+## How SpekPy computes HVL
+
+Here's how SpekPy computes the HVL for a simulated spectrum (see this [example script](https://bitbucket.org/spekpy/spekpy_release/src/master/examples/generate_spectrum_and_use_all_get_methods.py):
+
+```python
+import spekpy as sp
+# Generate unfiltered spectrum
+s = sp.Spek(kvp=120, th=12)
+# Filter the spectrum
+s.multi_filter([['Al', 4.0], ['Air', 1000]])
+# Compute first and secon HVL for Al and Cu
+print('1st Hvl:', s.get_hvl1(), 'mmAl')
+print('2nd Hvl:', s.get_hvl2(), 'mmAl')
+print('1st Hvl:', s.get_hvl1(matl='Cu'), 'mmCu')
+print('2nd Hvl:', s.get_hvl2(matl='Cu'), 'mmCu')
+```
+
+Let's take the ``get_hvl1()`` method and see what happens inside to compute the half value layer.
+This method is found in the [SpekPy module](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/SpekPy.py):
+
+```python
+def get_hvl1(self, matl='Al', **kwargs):
+    """
+    Method to get the first half value layer for a desired material for the
+    parameters in the current spekpy state
+
+    :param str matl: The desired material name
+    :param kwargs: Keyword arguments to change parameters that are used for
+        the calculation
+    :return float first_half_value_layer: The calculated first half value
+        layer for the desired material [mm]
+    """
+    calc_params = self.parameters_for_calculation(**kwargs)
+    first_half_value_layer = calculate_first_half_value_layer_from_spectrum(self, calc_params, matl)
+    return first_half_value_layer
+```
+
+It basically calls the method ``calculate_first_half_value_layer_from_spectrum()``, which can be found in the [SpekTools module](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/SpekTools.py):
+
+```python
+def calculate_first_half_value_layer_from_spectrum(spekpy_obj, calc_params, filter_material):
+    """
+    A function to calculate the first half value layer of a spectrum for a
+    desired material
+
+    :param Spek spekpy_obj: An instance of spekpy object (Spek class)
+    :param dict calc_parameters: Ordered dictionary of spectrum parameters
+    :param str filter_material: The name of the desired filter material
+    :return float first_half_value_layer: The calculated first half value
+        layer [mm]
+    """
+    first_half_value_layer = minimize_for_fraction(spekpy_obj, calc_params,  filter_material, 0.5)
+    return first_half_value_layer
+```
+
+It basically calls the method ``minimize_for_fraction()``, which can be found in the [SpekTools module](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/SpekTools.py):
+
+```python
+def minimize_for_fraction(spekpy_obj, calc_params, filter_material,
+                          fractional_value):
+    """
+    A function that is used to calculate the required thickness of a material
+    to reach a specified fractional air Kerma value
+
+    :param Spek spekpy_obj: An instance of spekpy object (Spek class)
+    :param dict calc_parameters: Ordered dictionary of spectrum parameters
+    :param str filter_material: The material of a specified filtration
+    :param float fractional_value: The target fractional value for air kerma
+    :return float required_filter_thickness: The required thickness of filter
+        for the target drop in kerma
+    """
+    cost_function = make_cost_function_fraction(spekpy_obj, calc_params,
+                                            filter_material, fractional_value)
+    t = optimize.minimize_scalar(cost_function, method='brent')
+    required_filter_thickness = t.x
+    return required_filter_thickness
+```
+
+It basically calls the method ``make_cost_function_fraction()``, which can be found in the [SpekTools module](https://bitbucket.org/spekpy/spekpy_release/src/master/spekpy/SpekTools.py):
+
+```python
+def make_cost_function_fraction(spekpy_obj, calc_params, filter_material,
+                                fractional_value):
+    """
+    A function to create a cost function that can be used to find the filter
+    thickness of a specific material to reach a
+    specified fraction of air kerma
+
+    :param Spek spekpy_obj: An instance of spekpy object (Spek class)
+    :param dict calc_parameters: Ordered dictionary of spectrum parameters
+    :param str filter_material: A specified filter material
+    :param float fractional_value: A fraction of air Kerma that is desired
+    :return cost_function_fraction: The cost function that is used to find the
+        required thickness of a specified material needed to reach a specified
+        fraction of air kerma
+    """
+    # free_parameter represents a thickness of filtration
+    def cost_function_fraction(free_parameter):
+        warnings.filterwarnings("ignore")
+        # Store the initial filtration
+        state_filtration_original = deepcopy(spekpy_obj.state.filtration)
+        d0 = calculate_air_kerma_from_spectrum(spekpy_obj, calc_params,
+                                               mas_normalized_air_kerma=False)
+        # Filter spectrum with a thickness of free_parameter
+        change_filtration(spekpy_obj, filter_material, free_parameter)
+        d = calculate_air_kerma_from_spectrum(spekpy_obj, calc_params,
+                                              mas_normalized_air_kerma=False)
+        # Remove the filtration of thickness free_parameter
+        spekpy_obj.state.filtration = state_filtration_original
+        if np.isinf(d) or np.isinf(d0):
+            val=np.inf
+        else:
+            val = (fractional_value - d / d0) ** 2
+        return val
+
+    return cost_function_fraction
+```
+
+What wee see is that, in the end, SpekPy is using the Optimize Module of SciPy, ``scipy.optimize``.
+This module is used when you need to optimize the input parameters for a function.
+It contains a number of useful methods for optimizing different kinds of functions.
+The one SpekPy uses is the ``minimize_scalar()`` function, which is used to minimize a function of one variable.
+The SciPy library has three built-in methods for scalar minimization: ``brent``, ``golden`` and ``bounded``.
+The one SpekPy is using is the ``brent`` method.
+Here's reference material to read:
+- [SciPy optimization tutorial](https://docs.scipy.org/doc/scipy/tutorial/optimize.html#univariate-function-minimizers-minimize-scalar)
+- [RealPython tutorial on using SciPy for optimization](https://realpython.com/python-scipy-cluster-optimize/#minimizing-a-function-with-one-variable)
