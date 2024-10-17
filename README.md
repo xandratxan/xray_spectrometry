@@ -434,7 +434,7 @@ The main function demonstrates how to create a Spectrum object, apply logarithmi
 
 This approach encapsulates the functionality within a single class, making the code more modular and easier to manage. If you have any questions or need further adjustments, feel free to ask!
 
-## How SpekPy computes HVL
+### How SpekPy computes HVL
 
 Here's how SpekPy computes the HVL for a simulated spectrum (see this [example script](https://bitbucket.org/spekpy/spekpy_release/src/master/examples/generate_spectrum_and_use_all_get_methods.py):
 
@@ -561,3 +561,13 @@ The one SpekPy is using is the ``brent`` method.
 Here's reference material to read:
 - [SciPy optimization tutorial](https://docs.scipy.org/doc/scipy/tutorial/optimize.html#univariate-function-minimizers-minimize-scalar)
 - [RealPython tutorial on using SciPy for optimization](https://realpython.com/python-scipy-cluster-optimize/#minimizing-a-function-with-one-variable)
+
+## Developing and independent interpolation tool
+
+It seems that interpolation may be a common problem, not onli restricted to xray metrology.
+Maybe, it would be a good idea to develop a tool for interpolating.
+I'm thinking in two features:
+- It should have the possibility of applying different interpolation methods in an ease way.
+- It should let transform the data to log scale easily.
+The basis for this iea is already implemented in the Spectrum class. 
+Maybe we could separate it from this class.
