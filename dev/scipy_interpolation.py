@@ -4,7 +4,7 @@
 # https://docs.scipy.org/doc/scipy/tutorial/interpolate/1D.html
 
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator
 import matplotlib.pyplot as plt
 
 # Define data to interpolate
@@ -21,7 +21,13 @@ y_new_linear = np.interp(x_new, x, y)
 interpolator_splines = CubicSpline(x, y)
 y_new_splines = interpolator_splines(x_new)
 
-# Monotone interpolants
+# Monotone interpolants: Pchip
+interpolator_pchip = PchipInterpolator(x, y)
+y_new_pchip = interpolator_pchip(x_new)
+
+# Monotone interpolants: Akima
+interpolator_akima = Akima1DInterpolator(x, y)
+y_new_akima = interpolator_akima(x_new)
 
 # Interpolation with B-splines
 
@@ -31,5 +37,7 @@ y_new_splines = interpolator_splines(x_new)
 plt.plot(x, y, 'o', label='Data')
 plt.plot(x_new, y_new_linear, '-', label='Piecewise linear')
 plt.plot(x_new, y_new_splines, '-', label='Cubic splines')
+plt.plot(x_new, y_new_pchip, '-', label='Monotone: Pchip')
+plt.plot(x_new, y_new_akima, '-', label='Monotone: Akima')
 plt.legend(loc='best')
 plt.show()
