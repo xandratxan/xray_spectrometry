@@ -3,9 +3,9 @@
 # https://docs.scipy.org/doc/scipy/tutorial/interpolate.html
 # https://docs.scipy.org/doc/scipy/tutorial/interpolate/1D.html
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
-import matplotlib.pyplot as plt
 
 # Define data to interpolate
 # - Two arrays of data to interpolate, x, and y
@@ -18,22 +18,20 @@ x_new = np.linspace(0, 10, num=101)
 y_new_linear = np.interp(x_new, x, y)
 
 # Cubic splines
-interpolator_splines = CubicSpline(x, y)
-y_new_splines = interpolator_splines(x_new)
+interpolator = CubicSpline(x, y)
+y_new_splines = interpolator(x_new)
 
 # Monotone interpolants: Pchip
-interpolator_pchip = PchipInterpolator(x, y)
-y_new_pchip = interpolator_pchip(x_new)
+interpolator = PchipInterpolator(x, y)
+y_new_pchip = interpolator(x_new)
 
 # Monotone interpolants: Akima
-interpolator_akima = Akima1DInterpolator(x, y)
-y_new_akima = interpolator_akima(x_new)
+interpolator = Akima1DInterpolator(x, y)
+y_new_akima = interpolator(x_new)
 
 # Interpolation with B-splines (more optional arguments)
-interpolator_b_splines = make_interp_spline(x, y, k=2)
-y_new_b_splines = interpolator_b_splines(x_new)
-
-# Parametric spline curves
+interpolator = make_interp_spline(x, y, k=2)
+y_new_b_splines = interpolator(x_new)
 
 # Plot the results
 plt.plot(x, y, 'o', label='Data')
@@ -41,6 +39,16 @@ plt.plot(x_new, y_new_linear, '-', label='Piecewise linear')
 plt.plot(x_new, y_new_splines, '-', label='Cubic splines')
 plt.plot(x_new, y_new_pchip, '-', label='Monotone: Pchip')
 plt.plot(x_new, y_new_akima, '-', label='Monotone: Akima')
-plt.plot(x_new, y_new_b_splines, '-', label='Monotone: B-splines')
+plt.plot(x_new, y_new_b_splines, '-', label='B-splines')
 plt.legend(loc='best')
+plt.show()
+
+names = ['Piecewise linear', 'Cubic splines', 'Monotone: Pchip', 'Monotone: Akima', 'B-splines']
+y_new = [y_new_linear, y_new_splines, y_new_pchip, y_new_akima, y_new_b_splines]
+fig, ax = plt.subplots(1, len(names), figsize=(16, 3), sharey=True)
+for i in range(len(names)):
+    print(i, names[i], y_new[i][:3])
+    ax[i].plot(x, y, 'o', label='Data')
+    ax[i].plot(x_new, y_new[i], '-', label=names[i])
+    ax[i].set_title(names[i])
 plt.show()
