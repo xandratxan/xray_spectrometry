@@ -1,6 +1,6 @@
 from math import log
 
-from spectrometry.spectrometry import Spectrum
+from spectrometry import Spectrum
 
 print('Create a spectrum and check its linear and logarithmic representations')
 
