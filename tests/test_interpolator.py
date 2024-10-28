@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from spectrometry import Interpolator
+from src.spectrometry.interpolator import Interpolator
 
 
 class TestInterpolator:
@@ -67,5 +67,3 @@ class TestInterpolator:
         def test_str(self):
             interpolator = Interpolator(x=[1, 2, 3], y=[4, 5, 6])
             assert str(interpolator) == "Interpolator with:\nx: [1 2 3]\ny: [4 5 6]"
-
-# TODO: code coverage report
