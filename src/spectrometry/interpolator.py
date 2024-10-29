@@ -1,10 +1,10 @@
-import os
+from os.path import splitext
 from collections.abc import Iterable
 from numbers import Number
 
 import numpy as np
 import pandas as pd
-import scipy as sp
+from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
 
 class Interpolator:
@@ -157,19 +157,19 @@ class Interpolator:
             new_y = np.interp(new_x, self.x, self.y)
             return new_y
         elif method == 'CubicSpline':
-            interpolator = sp.interpolate.CubicSpline(self.x, self.y)
+            interpolator = CubicSpline(self.x, self.y)
             new_y = interpolator(new_x)
             return new_y
         elif method == 'Pchip':
-            interpolator = sp.interpolate.PchipInterpolator(self.x, self.y)
+            interpolator = PchipInterpolator(self.x, self.y)
             new_y = interpolator(new_x)
             return new_y
         elif method == 'Akima1D':
-            interpolator = sp.interpolate.Akima1DInterpolator(self.x, self.y)
+            interpolator = Akima1DInterpolator(self.x, self.y)
             new_y = interpolator(new_x)
             return new_y
         elif method == 'B-splines':
-            interpolator = sp.interpolate.make_interp_spline(self.x, self.y, k=2)  # TODO: add k parameter to args
+            interpolator = make_interp_spline(self.x, self.y, k=2)  # TODO: add k parameter to args
             new_y = interpolator(new_x)
             return new_y
         else:
@@ -205,7 +205,7 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
         If the file type is not supported.
     """
     try:
-        _, file_extension = os.path.splitext(file_path)
+        _, file_extension = splitext(file_path)
         file_extension = file_extension.lower()
 
         if file_extension == '.csv':
@@ -225,7 +225,6 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
         raise ValueError(f"Error reading file: {e}")
 
 
-# TODO: add feature to create interpolator from csv or excel files
 # TODO: interpolation in linear or logarithmic scale
 # TODO: dealing with zeros or other invalid values in logarithmic scale
 # TODO: interpolate a single value or multiple values
