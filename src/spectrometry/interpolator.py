@@ -149,10 +149,10 @@ class Interpolator:
     def __str__(self):
         return f"Interpolator with:\nx: {self.x}\ny: {self.y}"
 
-    def __call__(self, new_x, method):  # TODO
-        return self.interpolate(new_x, method)
+    def __call__(self, new_x, method, k=3):
+        return self.interpolate(new_x, method, k=k)
 
-    def interpolate(self, new_x, method):  # TODO
+    def interpolate(self, new_x, method, k=3):
         if method == 'PiecewiseLinear':
             new_y = np.interp(new_x, self.x, self.y)
             return new_y
@@ -169,7 +169,7 @@ class Interpolator:
             new_y = interpolator(new_x)
             return new_y
         elif method == 'B-splines':
-            interpolator = make_interp_spline(self.x, self.y, k=2)  # TODO: add k parameter to args
+            interpolator = make_interp_spline(self.x, self.y, k=k)
             new_y = interpolator(new_x)
             return new_y
         else:

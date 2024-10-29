@@ -75,8 +75,8 @@ class TestInterpolator:
 
     class TestInterpolate:
         def setup_method(self):
-            self.x = np.array([1, 2, 3])
-            self.y = np.array([10, 20, 30])
+            self.x = np.array([0, 1, 2, 3])
+            self.y = np.array([0, 10, 20, 30])
             self.new_x = 1.5
             self.interpolator = Interpolator(x=self.x, y=self.y)
 
@@ -104,7 +104,7 @@ class TestInterpolator:
             assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
 
         def test_b_splines(self):
-            interpolator = make_interp_spline(self.x, self.y, k=2)
+            interpolator = make_interp_spline(self.x, self.y)
             expected_y = interpolator(self.new_x)
             result_y = self.interpolator.interpolate(self.new_x, method='B-splines')
             assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
