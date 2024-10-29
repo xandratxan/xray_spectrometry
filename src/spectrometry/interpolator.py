@@ -1,3 +1,4 @@
+import os
 from collections.abc import Iterable
 from numbers import Number
 
@@ -173,6 +174,56 @@ class Interpolator:
             return new_y
         else:
             raise ValueError(f'Interpolation methods: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+
+
+def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
+    """
+    Reads a CSV or Excel file, extracts the specified columns for x and y values, and generates an Interpolator object.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file.
+    sheet_name : str or int, optional
+        The sheet name or index to read from (only used if the file is an Excel file, default is the first sheet).
+    x_col : int, optional
+        The index of the column containing the x values (default is 0).
+    y_col : int, optional
+        The index of the column containing the y values (default is 1).
+    header : bool, optional
+        Whether the first line of the file should be read as a header (default is True).
+
+    Returns
+    -------
+    Interpolator
+        An Interpolator object with the x and y values from the file.
+
+    Raises
+    ------
+    ValueError
+        If the specified columns are not found in the file.
+        If the file type is not supported.
+    """
+    try:
+        _, file_extension = os.path.splitext(file_path)
+        file_extension = file_extension.lower()
+
+        if file_extension == '.csv':
+            df = pd.read_csv(file_path, header=0 if header else None)
+        elif file_extension in ['.xls', '.xlsx']:
+            df = pd.read_excel(file_path, sheet_name=sheet_name, header=0 if header else None)
+        else:
+            raise ValueError("Unsupported file type. Must be a CSV or Excel file.")
+
+        if x_col >= len(df.columns) or y_col >= len(df.columns):
+            raise ValueError("Specified columns are not found in the file.")
+
+        x = df.iloc[:, x_col].values
+        y = df.iloc[:, y_col].values
+        return Interpolator(x, y)
+    except Exception as e:
+        raise ValueError(f"Error reading file: {e}")
+
 
 # TODO: add feature to create interpolator from csv or excel files
 # TODO: interpolation in linear or logarithmic scale
