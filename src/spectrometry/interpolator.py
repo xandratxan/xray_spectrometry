@@ -1,6 +1,6 @@
-from os.path import splitext
 from collections.abc import Iterable
 from numbers import Number
+from os.path import splitext
 
 import numpy as np
 import pandas as pd
@@ -152,28 +152,59 @@ class Interpolator:
     def __call__(self, new_x, method, k=3):
         return self.interpolate(new_x, method, k=k)
 
-    def interpolate(self, new_x, method, k=3):
-        if method == 'PiecewiseLinear':
-            new_y = np.interp(new_x, self.x, self.y)
-            return new_y
-        elif method == 'CubicSpline':
-            interpolator = CubicSpline(self.x, self.y)
-            new_y = interpolator(new_x)
-            return new_y
-        elif method == 'Pchip':
-            interpolator = PchipInterpolator(self.x, self.y)
-            new_y = interpolator(new_x)
-            return new_y
-        elif method == 'Akima1D':
-            interpolator = Akima1DInterpolator(self.x, self.y)
-            new_y = interpolator(new_x)
-            return new_y
-        elif method == 'B-splines':
-            interpolator = make_interp_spline(self.x, self.y, k=k)
-            new_y = interpolator(new_x)
-            return new_y
-        else:
-            raise ValueError(f'Interpolation methods: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+    def interpolate(self, new_x, methods, k=3):
+        """
+        Interpolate the data using the specified methods.
+
+        Parameters
+        ----------
+        new_x : array-like
+            The x-coordinates at which to interpolate.
+        methods : str or list of str
+            The interpolation method(s) to use. Can be one or more of:
+            'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
+        k : int, optional
+            The degree of the spline for 'B-splines' method (default is 3).
+
+        Returns
+        -------
+        numpy.ndarray or pandas.DataFrame
+            If a single method is provided, returns the interpolated y-coordinates as a numpy array.
+            If multiple methods are provided, returns a pandas DataFrame where the columns are the method names
+            and the values are the interpolated y-coordinates.
+
+        Raises
+        ------
+        ValueError
+            If an invalid interpolation method is provided.
+        """
+        if isinstance(methods, str):
+            methods = [methods]
+
+        results = {}
+        for method in methods:
+            if method == 'PiecewiseLinear':
+                new_y = np.interp(new_x, self.x, self.y)
+            elif method == 'CubicSpline':
+                interpolator = CubicSpline(self.x, self.y)
+                new_y = interpolator(new_x)
+            elif method == 'Pchip':
+                interpolator = PchipInterpolator(self.x, self.y)
+                new_y = interpolator(new_x)
+            elif method == 'Akima1D':
+                interpolator = Akima1DInterpolator(self.x, self.y)
+                new_y = interpolator(new_x)
+            elif method == 'B-splines':
+                interpolator = make_interp_spline(self.x, self.y, k=k)
+                new_y = interpolator(new_x)
+            else:
+                raise ValueError(f'Invalid interpolation method: {method}. '
+                                 f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+            results[method] = new_y
+
+        if len(results) == 1:
+            return next(iter(results.values()))
+        return pd.DataFrame(results)
 
 
 def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
@@ -227,7 +258,9 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
 
 # TODO: interpolation in linear or logarithmic scale
 # TODO: dealing with zeros or other invalid values in logarithmic scale
+
 # TODO: interpolate a single value or multiple values
 # TODO: interpolate using several interpolation methods? compare interpolation results?
+
 # TODO: feature to plot interpolation results?
 # TODO: web app or desktop app?
