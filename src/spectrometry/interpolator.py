@@ -217,6 +217,36 @@ class Interpolator:
 
         return self.new_y
 
+    def to_file(self, file_path, csv=True):
+        """
+        Save the stored interpolation results and the new_x values to a CSV or Excel file.
+
+        Parameters
+        ----------
+        file_path : str
+            The path to the file where the results will be saved.
+        csv : bool, optional
+            If True, save as CSV; if False, save as Excel. Default is True.
+
+        Raises
+        ------
+        ValueError
+            If no interpolation results are stored.
+        """
+        if self.new_y is None or self.new_x is None:
+            raise ValueError("No interpolation results to save. Please run the interpolate method first.")
+
+        if isinstance(self.new_y, np.ndarray):
+            df = pd.DataFrame({'new_x': self.new_x, 'new_y': self.new_y})
+        else:
+            df = pd.DataFrame(self.new_y)
+            df.insert(0, 'new_x', self.new_x)
+
+        if csv:
+            df.to_csv(file_path, index=False)
+        else:
+            df.to_excel(file_path, index=False)
+
 
 def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
     """
@@ -269,9 +299,7 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
 
 # TODO: interpolation in linear or logarithmic scale
 # TODO: dealing with zeros or other invalid values in logarithmic scale
-
-# TODO: interpolate a single value or multiple values
-# TODO: interpolate using several interpolation methods? compare interpolation results?
-
+# TODO: compare interpolation results?
+# TODO: add support to optional arguments of scipy interpolation methods
 # TODO: feature to plot interpolation results?
 # TODO: web app or desktop app?
