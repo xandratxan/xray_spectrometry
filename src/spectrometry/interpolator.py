@@ -624,7 +624,5 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
         raise ValueError(f"Error reading file: {e}")
 
 # TODO: In docstrings: detailed description or notes?
-# TODO: Docs: line coments to explain the code
-# TODO: dealing with zeros or other invalid values in logarithmic scale
+# TODO: Docs: line comments to explain the code
 # TODO: add support to optional arguments of scipy interpolation methods
-# TODO: web app or desktop app?
