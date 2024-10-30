@@ -29,6 +29,12 @@ class TestInterpolator:
                 assert np.array_equal(interpolator.x, np.array([1, 2, 3]))
                 assert np.array_equal(interpolator.y, np.array([4, 5, 6]))
 
+            def test_valid_array(self):
+                data = np.array([[1, 2, 3], [4, 5, 6]])
+                interpolator = Interpolator(data=data)
+                assert np.array_equal(interpolator.x, np.array([1, 2, 3]))
+                assert np.array_equal(interpolator.y, np.array([4, 5, 6]))
+
             def test_invalid_both_x_y_and_data(self):
                 with pytest.raises(ValueError, match="Provide either 'x' and 'y' or 'data'"):
                     Interpolator(x=[1, 2, 3], y=[4, 5, 6], data=[(1, 4), (2, 5), (3, 6)])
