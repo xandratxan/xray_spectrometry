@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
-from src.spectrometry.interpolator import Interpolator, read_file, interpolate
+from src.spectrometry.interpolator import Interpolator, read_file, interpolate, clean_arrays
 
 
 class TestInterpolator:
@@ -81,7 +81,6 @@ class TestInterpolator:
             assert str(interpolator) == "Interpolator with:\nx: [1 2 3]\ny: [4 5 6]"
 
     class TestSetInterpolationAttr:
-
         def setup_method(self):
             # Setup common test data
             self.x = np.array([1, 2, 3, 4, 5])
@@ -116,7 +115,6 @@ class TestInterpolator:
                 self.interpolator._set_interpolation_attr(['a', 'b', 'c'], log=False)
 
     class TestGetInterpolationData:
-
         def setup_method(self):
             # Setup common test data
             self.x = np.array([1, 2, 3, 4, 5])
@@ -141,7 +139,6 @@ class TestInterpolator:
             assert np.array_equal(log_new_x, np.log(self.new_x))
 
     class TestSetInterpolatedAttr:
-
         def setup_method(self):
             # Setup common test data
             self.x = np.array([1, 2, 3, 4, 5])
@@ -163,7 +160,6 @@ class TestInterpolator:
             assert self.interpolator.log_new_y is None
 
     class TestToFile:
-
         def setup_method(self):
             # Setup common test data
             self.x = np.array([1, 2, 3, 4, 5])
@@ -215,45 +211,30 @@ class TestInterpolator:
             assert np.array_equal(df['method1'].values, self.new_y)
             assert np.array_equal(df['method2'].values, self.new_y + 1)
 
-    # class TestInterpolate:
-    #     def setup_method(self):
-    #         self.x = np.array([0, 1, 2, 3])
-    #         self.y = np.array([0, 10, 20, 30])
-    #         self.new_x = 1.5
-    #         self.interpolator = Interpolator(x=self.x, y=self.y)
-    #
-    #     def test_piecewise_linear(self):
-    #         expected_y = np.interp(self.new_x, self.x, self.y)
-    #         result_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear')
-    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-    #
-    #     def test_cubic_spline(self):
-    #         interpolator = CubicSpline(self.x, self.y)
-    #         expected_y = interpolator(self.new_x)
-    #         result_y = self.interpolator.interpolate(self.new_x, 'CubicSpline')
-    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-    #
-    #     def test_pchip(self):
-    #         interpolator = PchipInterpolator(self.x, self.y)
-    #         expected_y = interpolator(self.new_x)
-    #         result_y = self.interpolator.interpolate(self.new_x, 'Pchip')
-    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-    #
-    #     def test_akima1d(self):
-    #         interpolator = Akima1DInterpolator(self.x, self.y)
-    #         expected_y = interpolator(self.new_x)
-    #         result_y = self.interpolator.interpolate(self.new_x, 'Akima1D')
-    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-    #
-    #     def test_b_splines(self):
-    #         interpolator = make_interp_spline(self.x, self.y)
-    #         expected_y = interpolator(self.new_x)
-    #         result_y = self.interpolator.interpolate(self.new_x, 'B-splines')
-    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-    #
-    #     def test_invalid_method(self):
-    #         with pytest.raises(ValueError, match="Invalid interpolation method"):
-    #             self.interpolator.interpolate(self.new_x, 'InvalidMethod')
+    class TestInterpolate:
+        def setup_method(self):
+            # Setup common test data
+            self.x = np.array([1, 2, 3, 4, 5])
+            self.y = np.array([2, 4, 6, 8, 10])
+            self.new_x = np.array([1.5, 2.5, 3.5])
+            self.expected_y = np.array([3, 5, 7])
+            self.interpolator = Interpolator(x=self.x, y=self.y)
+
+        def test_interpolate_single_method_linear_scale(self):
+            # Test single interpolation method in linear scale
+            new_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear')
+            assert np.array_equal(new_y, self.expected_y)
+
+        def test_interpolate_single_method_log_scale(self):
+            # Test single interpolation method in logarithmic scale
+            new_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear', log=True)
+            assert np.allclose(new_y, self.expected_y)
+
+        def test_interpolate_single_method_linear_scale(self):
+            # Test multiple interpolation methods in linear scale
+            new_y = self.interpolator.interpolate(self.new_x, ['PiecewiseLinear', 'CubicSpline'])
+            assert np.array_equal(new_y['PiecewiseLinear'], self.expected_y)
+            assert np.array_equal(new_y['CubicSpline'], self.expected_y)
 
 
 class TestReadFile:
