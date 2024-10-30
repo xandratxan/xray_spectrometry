@@ -286,6 +286,9 @@ class Interpolator:
         ValueError
             If an invalid interpolation method is provided.
         """
+        if log:
+            self.x, self.y = clean_arrays(self.x, self.y)
+
         self.set_interpolation_attr(new_x, log)
 
         x, y, new_x = self.get_interpolation_data(log)
@@ -517,8 +520,6 @@ def clean_arrays(x, y):
         # Remove invalid elements from x and y
         x = x[~invalid_mask]
         y = y[~invalid_mask]
-    else:
-        print('no invalid elements')
 
     return x, y
 
@@ -622,7 +623,8 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
     except Exception as e:
         raise ValueError(f"Error reading file: {e}")
 
-# TODO: interpolation in linear or logarithmic scale
+# TODO: In docstrings: detailed description or notes?
+# TODO: Docs: line coments to explain the code
 # TODO: dealing with zeros or other invalid values in logarithmic scale
 # TODO: add support to optional arguments of scipy interpolation methods
 # TODO: web app or desktop app?
