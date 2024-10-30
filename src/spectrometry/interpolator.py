@@ -320,6 +320,99 @@ class Interpolator:
             plt.show()
 
 
+def clean_arrays(x, y):
+    """
+    Clean the input arrays by removing invalid values from y and the corresponding elements from x.
+
+    This function converts the input y array to a numpy array of type float64, checks for invalid values
+    (zero, negative, NaN, or infinite values) in y, and removes the invalid elements from both x and y.
+    If any invalid values are found, a warning is raised.
+
+    Parameters
+    ----------
+    x : array-like
+        The x-coordinates of the data points.
+    y : array-like
+        The y-coordinates of the data points.
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        The cleaned x and y arrays with invalid values removed.
+
+    Raises
+    ------
+    Warning
+        If any invalid values are found in y, a warning is raised and the corresponding elements in x and y are deleted.
+    """
+    y = np.array(y).astype(np.float64)
+
+    # Check for invalid values in y
+    invalid_mask = (y == 0) | (y < 0) | np.isnan(y) | np.isinf(y)
+
+    # If there are any invalid values, raise a warning
+    if np.any(invalid_mask):
+        warn("Invalid values found in y. Corresponding elements in x and y will be deleted.")
+
+        # Remove invalid elements from x and y
+        x = x[~invalid_mask]
+        y = y[~invalid_mask]
+    else:
+        print('no invalid elements')
+
+    return x, y
+
+
+def interpolate(x, y, new_x, method, k=3):
+    """
+    Perform interpolation using the specified method.
+
+    This method performs interpolation on the given data using the specified method.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        The x-coordinates of the data points to be used for interpolation.
+    y : numpy.ndarray
+        The y-coordinates of the data points to be used for interpolation.
+    new_x : numpy.ndarray
+        The x-coordinates at which to interpolate.
+    method : str
+        The interpolation method to use. Can be one of:
+        'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
+    k : int, optional
+        The degree of the spline for 'B-splines' method (default is 3).
+
+    Returns
+    -------
+    numpy.ndarray
+        The interpolated y-coordinates.
+
+    Raises
+    ------
+    ValueError
+        If an invalid interpolation method is provided.
+    """
+    if method == 'PiecewiseLinear':
+        new_y = np.interp(new_x, x, y)
+    elif method == 'CubicSpline':
+        interpolator = CubicSpline(x, y)
+        new_y = interpolator(new_x)
+    elif method == 'Pchip':
+        interpolator = PchipInterpolator(x, y)
+        new_y = interpolator(new_x)
+    elif method == 'Akima1D':
+        interpolator = Akima1DInterpolator(x, y)
+        new_y = interpolator(new_x)
+    elif method == 'B-splines':
+        interpolator = make_interp_spline(x, y, k=k)
+        new_y = interpolator(new_x)
+    else:
+        raise ValueError(f'Invalid interpolation method: {method}. '
+                         f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+    return new_y
+
+
 def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
     """
     Reads a CSV or Excel file, extracts the specified columns for x and y values, and generates an Interpolator object.
