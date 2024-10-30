@@ -230,11 +230,16 @@ class TestInterpolator:
             new_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear', log=True)
             assert np.allclose(new_y, self.expected_y)
 
-        def test_interpolate_single_method_linear_scale(self):
+        def test_interpolate_multiple_methods(self):
             # Test multiple interpolation methods in linear scale
             new_y = self.interpolator.interpolate(self.new_x, ['PiecewiseLinear', 'CubicSpline'])
             assert np.array_equal(new_y['PiecewiseLinear'], self.expected_y)
             assert np.array_equal(new_y['CubicSpline'], self.expected_y)
+
+        def test_interpolate_single_value(self):
+            new_y = self.interpolator.interpolate(1.5, 'PiecewiseLinear')
+            assert new_y[0]==3
+
 
 
 class TestReadFile:

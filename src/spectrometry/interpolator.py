@@ -308,6 +308,8 @@ class Interpolator:
             If `new_x` is not a non-string iterable.
             If elements of `new_x` are not numerical.
         """
+        if isinstance(new_x, Number):
+            new_x = [new_x]
         if new_x is not None and not (isinstance(new_x, Iterable) and not isinstance(new_x, str)):
             raise ValueError("Interpolation failed. New x-coordinates must be a non-string iterable.")
         for i in new_x:
