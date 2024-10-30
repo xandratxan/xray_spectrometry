@@ -23,10 +23,14 @@ class Interpolator:
 
     Attributes
     ----------
-    x : array-like
+    x : numpy.ndarray
         The x-coordinates of the data points.
-    y : array-like
+    y : numpy.ndarray
         The y-coordinates of the data points.
+    new_x : array-like
+        The x-coordinates at which to interpolate.
+    new_y : array-like
+        The interpolated y-coordinates.
 
     Raises
     ------
@@ -78,6 +82,8 @@ class Interpolator:
         self._validate_arguments_type()
         self.x, self.y = self._extract_attributes()
         self._validate_attributes_type()
+        self.new_x = None
+        self.new_y = None
 
     def _validate_arguments_combination(self):
         """
@@ -154,7 +160,7 @@ class Interpolator:
 
     def interpolate(self, new_x, methods, k=3):
         """
-        Interpolate the data using the specified methods.
+        Interpolate the data using the specified methods and store the results.
 
         Parameters
         ----------
@@ -178,33 +184,38 @@ class Interpolator:
         ValueError
             If an invalid interpolation method is provided.
         """
+        self.new_x = new_x
+
         if isinstance(methods, str):
             methods = [methods]
 
         results = {}
         for method in methods:
             if method == 'PiecewiseLinear':
-                new_y = np.interp(new_x, self.x, self.y)
+                new_y = np.interp(self.new_x, self.x, self.y)
             elif method == 'CubicSpline':
                 interpolator = CubicSpline(self.x, self.y)
-                new_y = interpolator(new_x)
+                new_y = interpolator(self.new_x)
             elif method == 'Pchip':
                 interpolator = PchipInterpolator(self.x, self.y)
-                new_y = interpolator(new_x)
+                new_y = interpolator(self.new_x)
             elif method == 'Akima1D':
                 interpolator = Akima1DInterpolator(self.x, self.y)
-                new_y = interpolator(new_x)
+                new_y = interpolator(self.new_x)
             elif method == 'B-splines':
                 interpolator = make_interp_spline(self.x, self.y, k=k)
-                new_y = interpolator(new_x)
+                new_y = interpolator(self.new_x)
             else:
                 raise ValueError(f'Invalid interpolation method: {method}. '
                                  f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
             results[method] = new_y
 
         if len(results) == 1:
-            return next(iter(results.values()))
-        return pd.DataFrame(results)
+            self.new_y = next(iter(results.values()))
+        else:
+            self.new_y = pd.DataFrame(results)
+
+        return self.new_y
 
 
 def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
