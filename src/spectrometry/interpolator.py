@@ -116,15 +116,15 @@ class Interpolator:
         and initializes additional attributes for interpolation.
         """
         self._x, self._y, self._data = x, y, data
-        self.validate_arguments_combination()
-        self.validate_arguments_type()
-        self.x, self.y = self.extract_attributes()
-        self.validate_attributes_type()
+        self._validate_arguments_combination()
+        self._validate_arguments_type()
+        self.x, self.y = self._extract_attributes()
+        self._validate_attributes_type()
         self.new_x, self.new_y = None, None
         self.log_x, self.log_y = None, None
         self.log_new_x, self.log_new_y = None, None
 
-    def validate_arguments_combination(self):
+    def _validate_arguments_combination(self):
         """
         Validate the combination of arguments provided to the constructor.
 
@@ -142,7 +142,7 @@ class Interpolator:
         if not from_x_y and not from_data:
             raise ValueError("Interpolator constructor failed. Provide either 'x' and 'y' or 'data'.")
 
-    def validate_arguments_type(self):
+    def _validate_arguments_type(self):
         """
         Validate the types of arguments provided to the constructor.
 
@@ -158,7 +158,7 @@ class Interpolator:
             if arg is not None and not (isinstance(arg, Iterable) and not isinstance(arg, str)):
                 raise ValueError("Interpolator constructor failed. Arguments must be non-string iterables.")
 
-    def extract_attributes(self):
+    def _extract_attributes(self):
         """
         Extract the x and y attributes from the arguments provided to the constructor.
 
@@ -187,7 +187,7 @@ class Interpolator:
             x, y = np.array(self._x), np.array(self._y)
         return x, y
 
-    def validate_attributes_type(self):
+    def _validate_attributes_type(self):
         """
         Validate the types of the extracted attributes.
 
@@ -289,9 +289,9 @@ class Interpolator:
         if log:
             self.x, self.y = clean_arrays(self.x, self.y)
 
-        self.set_interpolation_attr(new_x, log)
+        self._set_interpolation_attr(new_x, log)
 
-        x, y, new_x = self.get_interpolation_data(log)
+        x, y, new_x = self._get_interpolation_data(log)
 
         if isinstance(methods, str):
             methods = [methods]
@@ -306,11 +306,11 @@ class Interpolator:
         else:
             new_y = pd.DataFrame(results)
 
-        self.set_interpolated_attr(new_y, log)
+        self._set_interpolated_attr(new_y, log)
 
         return self.new_y
 
-    def set_interpolation_attr(self, new_x, log):
+    def _set_interpolation_attr(self, new_x, log):
         """
         Set the attributes for interpolation.
 
@@ -330,7 +330,7 @@ class Interpolator:
             self.log_y = np.log(self.y)
             self.log_new_x = np.log(self.new_x)
 
-    def get_interpolation_data(self, log):
+    def _get_interpolation_data(self, log):
         """
         Get the appropriate x, y, and new_x data based on the scale.
 
@@ -351,7 +351,7 @@ class Interpolator:
         else:
             return self.x, self.y, self.new_x
 
-    def set_interpolated_attr(self, new_y, log):
+    def _set_interpolated_attr(self, new_y, log):
         """
         Sets the interpolated attribute values.
 
