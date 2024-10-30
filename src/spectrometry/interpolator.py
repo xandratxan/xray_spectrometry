@@ -82,8 +82,9 @@ class Interpolator:
         self._validate_arguments_type()
         self.x, self.y = self._extract_attributes()
         self._validate_attributes_type()
-        self.new_x = None
-        self.new_y = None
+        self.new_x, self.new_y = None, None
+        self.log_x, self.log_y = None, None
+        self.log_new_x, self.log_new_y = None, None
 
     def _validate_arguments_combination(self):
         """
@@ -155,10 +156,10 @@ class Interpolator:
     def __str__(self):
         return f"Interpolator with:\nx: {self.x}\ny: {self.y}"
 
-    def __call__(self, new_x, method, k=3):
-        return self.interpolate(new_x, method, k=k)
+    def __call__(self, new_x, method, k=3, log=False):
+        return self.interpolate(new_x, method, k=k, log=log)
 
-    def interpolate(self, new_x, methods, k=3):
+    def interpolate(self, new_x, methods, k=3, log=False):
         """
         Interpolate the data using the specified methods and store the results.
 
@@ -186,34 +187,53 @@ class Interpolator:
         """
         self.new_x = new_x
 
+        if log:
+            self.log_x = np.log(self.x)
+            self.log_y = np.log(self.y)
+            self.log_new_x = np.log(self.new_x)
+
+        if log:
+            x = self.log_x
+            y = self.log_y
+            new_x = self.log_new_x
+        else:
+            x = self.x
+            y = self.y
+
         if isinstance(methods, str):
             methods = [methods]
 
         results = {}
         for method in methods:
             if method == 'PiecewiseLinear':
-                new_y = np.interp(self.new_x, self.x, self.y)
+                new_y = np.interp(new_x, x, y)
             elif method == 'CubicSpline':
-                interpolator = CubicSpline(self.x, self.y)
-                new_y = interpolator(self.new_x)
+                interpolator = CubicSpline(x, y)
+                new_y = interpolator(new_x)
             elif method == 'Pchip':
-                interpolator = PchipInterpolator(self.x, self.y)
-                new_y = interpolator(self.new_x)
+                interpolator = PchipInterpolator(x, y)
+                new_y = interpolator(new_x)
             elif method == 'Akima1D':
-                interpolator = Akima1DInterpolator(self.x, self.y)
-                new_y = interpolator(self.new_x)
+                interpolator = Akima1DInterpolator(x, y)
+                new_y = interpolator(new_x)
             elif method == 'B-splines':
-                interpolator = make_interp_spline(self.x, self.y, k=k)
-                new_y = interpolator(self.new_x)
+                interpolator = make_interp_spline(x, y, k=k)
+                new_y = interpolator(new_x)
             else:
                 raise ValueError(f'Invalid interpolation method: {method}. '
                                  f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
             results[method] = new_y
 
         if len(results) == 1:
-            self.new_y = next(iter(results.values()))
+            new_y = next(iter(results.values()))
         else:
-            self.new_y = pd.DataFrame(results)
+            new_y = pd.DataFrame(results)
+
+        if log:
+            self.log_new_y = new_y
+            self.new_y = np.exp(new_y)
+        else:
+            self.new_y = new_y
 
         return self.new_y
 
@@ -351,7 +371,5 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
 
 # TODO: interpolation in linear or logarithmic scale
 # TODO: dealing with zeros or other invalid values in logarithmic scale
-# TODO: compare interpolation results?
 # TODO: add support to optional arguments of scipy interpolation methods
-# TODO: feature to plot interpolation results?
 # TODO: web app or desktop app?
