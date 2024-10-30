@@ -1,7 +1,7 @@
 from collections.abc import Iterable
 from numbers import Number
 from os.path import splitext
-
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
@@ -246,6 +246,58 @@ class Interpolator:
             df.to_csv(file_path, index=False)
         else:
             df.to_excel(file_path, index=False)
+
+    def plot(self, figsize=(10, 6), show=True, save=False, file_path='interpolation_plot', file_format='png'):
+        """
+        Plot the interpolation results.
+
+        Parameters
+        ----------
+        figsize : tuple, optional
+            The size of the figure. Default is (10, 6).
+        show : bool, optional
+            If True, display the plot. Default is True.
+        save : bool, optional
+            If True, save the plot as a file. Default is False.
+        file_path : str, optional
+            The path to the file where the plot will be saved. Default is 'interpolation_plot'.
+        file_format : str, optional
+            The format of the file to save the plot. Default is 'png'.
+
+        Raises
+        ------
+        ValueError
+            If no interpolation results are stored.
+        """
+        if self.new_y is None or self.new_x is None:
+            raise ValueError("No interpolation results to plot. Please run the interpolate method first.")
+
+        plt.figure(figsize=figsize)
+
+        # Plot original data points
+        plt.plot(self.x, self.y, 'o', label='Data')
+
+        # Check if new_y is a pandas DataFrame with multiple interpolation methods
+        if isinstance(self.new_y, pd.DataFrame):
+            for method_name in self.new_y.columns:
+                plt.plot(self.new_x, self.new_y[method_name], label=f'{method_name}')
+        else:
+            # Plot single method interpolation results
+            plt.plot(self.new_x, self.new_y, label='Interpolated')
+
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.title('Interpolation Results')
+        plt.legend()
+        plt.grid(True)
+
+        if save:
+            full_file_path = f"{file_path}.{file_format}"
+            plt.savefig(full_file_path)
+            print(f"Plot saved as {full_file_path}")
+
+        if show:
+            plt.show()
 
 
 def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
