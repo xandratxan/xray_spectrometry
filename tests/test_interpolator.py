@@ -356,3 +356,66 @@ class TestInterpolate:
     def test_invalid_method(self):
         with pytest.raises(ValueError, match="Invalid interpolation method"):
             interpolate(self.x, self.y, self.new_x, 'InvalidMethod')
+
+
+class TestCleanArrays:
+    def test_clean_arrays_no_invalid_values(self):
+        # Test with no invalid values
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([2, 4, 6, 8, 10])
+        cleaned_x, cleaned_y = clean_arrays(x, y)
+        assert np.array_equal(cleaned_x, x)
+        assert np.array_equal(cleaned_y, y)
+
+    def test_clean_arrays_with_zeros(self):
+        # Test with zero values in y
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([2, 0, 6, 0, 10])
+        with pytest.warns(UserWarning, match="Invalid values found in y"):
+            cleaned_x, cleaned_y = clean_arrays(x, y)
+        expected_x = np.array([1, 3, 5])
+        expected_y = np.array([2, 6, 10])
+        assert np.array_equal(cleaned_x, expected_x)
+        assert np.array_equal(cleaned_y, expected_y)
+
+    def test_clean_arrays_with_negative_values(self):
+        # Test with negative values in y
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([2, -4, 6, -8, 10])
+        with pytest.warns(UserWarning, match="Invalid values found in y"):
+            cleaned_x, cleaned_y = clean_arrays(x, y)
+        expected_x = np.array([1, 3, 5])
+        expected_y = np.array([2, 6, 10])
+        assert np.array_equal(cleaned_x, expected_x)
+        assert np.array_equal(cleaned_y, expected_y)
+
+    def test_clean_arrays_with_nan_values(self):
+        # Test with NaN values in y
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([2, np.nan, 6, np.nan, 10])
+        with pytest.warns(UserWarning, match="Invalid values found in y"):
+            cleaned_x, cleaned_y = clean_arrays(x, y)
+        expected_x = np.array([1, 3, 5])
+        expected_y = np.array([2, 6, 10])
+        assert np.array_equal(cleaned_x, expected_x)
+        assert np.array_equal(cleaned_y, expected_y)
+
+    def test_clean_arrays_with_inf_values(self):
+        # Test with infinite values in y
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([2, np.inf, 6, -np.inf, 10])
+        with pytest.warns(UserWarning, match="Invalid values found in y"):
+            cleaned_x, cleaned_y = clean_arrays(x, y)
+        expected_x = np.array([1, 3, 5])
+        expected_y = np.array([2, 6, 10])
+        assert np.array_equal(cleaned_x, expected_x)
+        assert np.array_equal(cleaned_y, expected_y)
+
+    def test_clean_arrays_all_invalid_values(self):
+        # Test with all invalid values in y
+        x = np.array([1, 2, 3, 4, 5])
+        y = np.array([0, -4, np.nan, np.inf, -np.inf])
+        with pytest.warns(UserWarning, match="Invalid values found in y"):
+            cleaned_x, cleaned_y = clean_arrays(x, y)
+        assert cleaned_x.size == 0
+        assert cleaned_y.size == 0
