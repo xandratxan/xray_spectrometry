@@ -46,30 +46,8 @@ class Interpolator:
 
     Methods
     -------
-    __init__(x=None, y=None, data=None)
-        Initialize the Interpolator object.
-    validate_arguments_combination()
-        Validate the combination of arguments provided to the constructor.
-    validate_arguments_type()
-        Validate the types of arguments provided to the constructor.
-    extract_attributes()
-        Extract x and y attributes from the provided data.
-    validate_attributes_type()
-        Validate the types of the extracted attributes.
-    __repr__()
-        Return a string representation of the Interpolator object.
-    __str__()
-        Return a human-readable string representation of the Interpolator object.
-    __call__(new_x, method, k=3, log=False)
-        Perform interpolation using the specified method.
     interpolate(new_x, methods, k=3, log=False)
         Perform interpolation using one or more specified methods.
-    set_interpolation_attr(new_x, log)
-        Set attributes for interpolation.
-    get_interpolation_data(log)
-        Get data for interpolation based on whether logarithmic scale is used.
-    set_interpolated_attr(new_y, log)
-        Set the interpolated attribute values.
     to_file(file_path, csv=True)
         Save the interpolation results to a file.
     plot(fig_size=(10, 6), show=True, save=False, file_path='interpolation_plot', file_format='png')
