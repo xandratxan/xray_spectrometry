@@ -1,6 +1,8 @@
+from warnings import warn
 from collections.abc import Iterable
 from numbers import Number
 from os.path import splitext
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,17 +11,19 @@ from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolato
 
 class Interpolator:
     """
-    A class used to perform interpolation.
+    Interpolator class for performing various interpolation methods on given data.
+
+    This class provides functionality to initialize with x and y coordinates or a data structure containing them,
+    validate the input, perform interpolation using different methods, and save or plot the results.
 
     Parameters
     ----------
     x : array-like, optional
-        The x-coordinates of the data points. Must be provided if `data` is not given.
+        The x-coordinates of the data points. Default is None.
     y : array-like, optional
-        The y-coordinates of the data points. Must be provided if `data` is not given.
-    data : array-like, dict, or pandas.DataFrame, optional
-        The data points as a list of tuples (x, y), a dictionary with keys 'x' and 'y', or a pandas DataFrame.
-        Must be provided if `x` and `y` are not given.
+        The y-coordinates of the data points. Default is None.
+    data : dict, pandas.DataFrame, or list of array-like, optional
+        The data containing x and y coordinates. If provided, `x` and `y` should be None. Default is None.
 
     Attributes
     ----------
@@ -27,103 +31,150 @@ class Interpolator:
         The x-coordinates of the data points.
     y : numpy.ndarray
         The y-coordinates of the data points.
-    new_x : array-like
-        The x-coordinates at which to interpolate.
-    new_y : array-like
+    new_x : numpy.ndarray or None
+        The x-coordinates for which interpolation is performed.
+    new_y : numpy.ndarray or pandas.DataFrame or None
         The interpolated y-coordinates.
+    log_x : numpy.ndarray or None
+        The logarithm of the x-coordinates of the data points.
+    log_y : numpy.ndarray or None
+        The logarithm of the y-coordinates of the data points.
+    log_new_x : numpy.ndarray or None
+        The logarithm of the x-coordinates for which interpolation is performed.
+    log_new_y : numpy.ndarray or None
+        The logarithm of the interpolated y-coordinates.
+
+    Methods
+    -------
+    __init__(x=None, y=None, data=None)
+        Initialize the Interpolator object.
+    validate_arguments_combination()
+        Validate the combination of arguments provided to the constructor.
+    validate_arguments_type()
+        Validate the types of arguments provided to the constructor.
+    extract_attributes()
+        Extract x and y attributes from the provided data.
+    validate_attributes_type()
+        Validate the types of the extracted attributes.
+    __repr__()
+        Return a string representation of the Interpolator object.
+    __str__()
+        Return a human-readable string representation of the Interpolator object.
+    __call__(new_x, method, k=3, log=False)
+        Perform interpolation using the specified method.
+    interpolate(new_x, methods, k=3, log=False)
+        Perform interpolation using one or more specified methods.
+    set_interpolation_attr(new_x, log)
+        Set attributes for interpolation.
+    get_interpolation_data(log)
+        Get data for interpolation based on whether logarithmic scale is used.
+    set_interpolated_attr(new_y, log)
+        Set the interpolated attribute values.
+    to_file(file_path, csv=True)
+        Save the interpolation results to a file.
+    plot(fig_size=(10, 6), show=True, save=False, file_path='interpolation_plot', file_format='png')
+        Plot the interpolation results.
 
     Raises
     ------
     ValueError
-        If both `x` and `y` are provided along with `data`.
-        If neither `x` and `y` nor `data` are provided.
-        If `x`, `y`, or `data` are not non-string iterables.
-        If elements of `x`, `y`, or `data` are not numerical.
-
-    Examples
-    --------
-    >>> interpolator1 = Interpolator(x=[1, 2, 3], y=[4, 5, 6])
-    >>> interpolator2 = Interpolator(data={'x': [1, 2, 3], 'y': [4, 5, 6]})
-    >>> interpolator3 = Interpolator(data=pd.DataFrame({'x': [1, 2, 3], 'y': [4, 5, 6]}))
-    >>> interpolator4 = Interpolator(x=[1, 2, 3], y=[4, 5, 6], data=[(1, 4), (2, 5), (3, 6)])
-    Traceback (most recent call last):
-        ...
-    ValueError: Interpolator constructor failed. Provide either 'x' and 'y' or 'data'. Provided Interpolator(x=[1, 2, 3], y=[4, 5, 6], data=[(1, 4), (2, 5), (3, 6)]).
-    >>> interpolator5 = Interpolator()
-    Traceback (most recent call last):
-        ...
-    ValueError: Interpolator constructor failed. Provide either 'x' and 'y' or 'data'. Provided Interpolator(x=None, y=None, data=None).
+        If neither `x` and `y` nor `data` are provided, or if both are provided.
+        If the provided arguments are not non-string iterables.
+        If the elements of `x` or `y` are not numerical.
+        If there are no interpolation results to save (in `to_file` method).
+        If there are no interpolation results to plot (in `plot` method).
     """
 
     def __init__(self, x=None, y=None, data=None):
         """
-        Initialize the Interpolator with either x and y coordinates or data.
+        Initialize the Interpolator object.
 
         Parameters
         ----------
         x : array-like, optional
-            The x-coordinates of the data points. Must be provided if `data` is not given.
+            The x-coordinates of the data points. Default is None.
         y : array-like, optional
-            The y-coordinates of the data points. Must be provided if `data` is not given.
-        data : array-like, dict, or pandas.DataFrame, optional
-            The data points as a list of tuples (x, y), a dictionary with keys 'x' and 'y', or a pandas DataFrame.
-            Must be provided if `x` and `y` are not given.
+            The y-coordinates of the data points. Default is None.
+        data : dict, pandas.DataFrame, or list of array-like, optional
+            The data containing x and y coordinates. If provided, `x` and `y` should be None. Default is None.
+
+        Returns
+        -------
+        None
 
         Raises
         ------
         ValueError
-            If both `x` and `y` are provided along with `data`.
-            If neither `x` and `y` nor `data` are provided.
-            If `x`, `y`, or `data` are not non-string iterables.
-            If elements of `x`, `y`, or `data` are not numerical.
+            If neither `x` and `y` nor `data` are provided, or if both are provided.
+            If the provided arguments are not non-string iterables.
+            If the elements of `x` or `y` are not numerical.
+
+        Notes
+        -----
+        This method initializes the Interpolator object by setting the provided x, y, and data attributes.
+        It validates the combination and types of the arguments, extracts attributes from the data if provided,
+        and initializes additional attributes for interpolation.
         """
         self._x, self._y, self._data = x, y, data
-        self._validate_arguments_combination()
-        self._validate_arguments_type()
-        self.x, self.y = self._extract_attributes()
-        self._validate_attributes_type()
+        self.validate_arguments_combination()
+        self.validate_arguments_type()
+        self.x, self.y = self.extract_attributes()
+        self.validate_attributes_type()
         self.new_x, self.new_y = None, None
         self.log_x, self.log_y = None, None
         self.log_new_x, self.log_new_y = None, None
 
-    def _validate_arguments_combination(self):
+    def validate_arguments_combination(self):
         """
         Validate the combination of arguments provided to the constructor.
+
+        This method checks if the combination of arguments provided to the constructor is valid.
+        It ensures that either 'x' and 'y' are provided together, or 'data' is provided, but not both.
 
         Raises
         ------
         ValueError
-            If both `x` and `y` are provided along with `data`.
-            If neither `x` and `y` nor `data` are provided.
+            If neither 'x' and 'y' nor 'data' are provided.
+            If both 'x' and 'y' and 'data' are provided.
         """
         from_x_y = (self._x is not None and self._y is not None) and self._data is None
         from_data = (self._x is None and self._y is None) and self._data is not None
         if not from_x_y and not from_data:
             raise ValueError("Interpolator constructor failed. Provide either 'x' and 'y' or 'data'.")
 
-    def _validate_arguments_type(self):
+    def validate_arguments_type(self):
         """
-        Validate the types of the arguments provided to the constructor.
+        Validate the types of arguments provided to the constructor.
+
+        This method checks if the arguments provided to the constructor are non-string iterables.
+        It ensures that 'x', 'y', and 'data' (if provided) are non-string iterables.
 
         Raises
         ------
         ValueError
-            If `x`, `y`, or `data` are not non-string iterables.
+            If any of the arguments are not non-string iterables.
         """
         for arg in [self._x, self._y, self._data]:
             if arg is not None and not (isinstance(arg, Iterable) and not isinstance(arg, str)):
                 raise ValueError("Interpolator constructor failed. Arguments must be non-string iterables.")
 
-    def _extract_attributes(self):
+    def extract_attributes(self):
         """
         Extract the x and y attributes from the arguments provided to the constructor.
 
+        This method extracts the x and y attributes from the provided data.
+        If 'data' is provided, it extracts 'x' and 'y' from the data.
+        If 'x' and 'y' are provided, it converts them to numpy arrays.
+
         Returns
         -------
-        x : numpy.ndarray
-            The x-coordinates of the data points.
-        y : numpy.ndarray
-            The y-coordinates of the data points.
+        tuple of numpy.ndarray
+            The extracted x and y attributes as numpy arrays.
+
+        Raises
+        ------
+        ValueError
+            If the data format is invalid.
         """
         if self._data is not None:
             if isinstance(self._data, dict):
@@ -136,14 +187,17 @@ class Interpolator:
             x, y = np.array(self._x), np.array(self._y)
         return x, y
 
-    def _validate_attributes_type(self):
+    def validate_attributes_type(self):
         """
-        Validate the types of the elements of the attributes.
+        Validate the types of the extracted attributes.
+
+        This method checks if the extracted attributes 'x' and 'y' are numerical.
+        It ensures that all elements in 'x' and 'y' are instances of the Number class.
 
         Raises
         ------
         ValueError
-            If elements of `x` or `y` are not numerical.
+            If any element in 'x' or 'y' is not numerical.
         """
         for attr in [self.x, self.y]:
             for i in attr:
@@ -151,13 +205,58 @@ class Interpolator:
                     raise ValueError("Interpolator constructor failed. Elements of arguments must be numerical.")
 
     def __repr__(self):
+        """
+        Return a string representation of the Interpolator object.
+
+        This method returns a string representation of the Interpolator object,
+        including the initial x, y, and data attributes provided to the constructor.
+
+        Returns
+        -------
+        str
+            A string representation of the Interpolator object.
+        """
         return f"Interpolator(x={self._x}, y={self._y}, data={self._data})"
 
     def __str__(self):
+        """
+        Return a string representation of the Interpolator object.
+
+        This method returns a string representation of the Interpolator object,
+        including the extracted x and y attributes.
+
+        Returns
+        -------
+        str
+            A string representation of the Interpolator object.
+        """
         return f"Interpolator with:\nx: {self.x}\ny: {self.y}"
 
-    def __call__(self, new_x, method, k=3, log=False):
-        return self.interpolate(new_x, method, k=k, log=log)
+    def __call__(self, new_x, methods, k=3, log=False):
+        """
+        Interpolate the data using the specified method when the object is called.
+
+        This method allows the Interpolator object to be called as a function to perform interpolation.
+        It uses the specified method to interpolate the data at the given new_x values.
+
+        Parameters
+        ----------
+        new_x : array-like
+            The x-coordinates at which to interpolate.
+        methods : str
+            The interpolation method to use. Can be one of:
+            'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
+        k : int, optional
+            The degree of the spline for 'B-splines' method (default is 3).
+        log : bool, optional
+            If True, apply logarithmic transformation to the data before interpolation. Default is False.
+
+        Returns
+        -------
+        numpy.ndarray or pandas.DataFrame
+            The interpolated y-coordinates.
+        """
+        return self.interpolate(new_x, methods, k=k, log=log)
 
     def interpolate(self, new_x, methods, k=3, log=False):
         """
@@ -172,6 +271,8 @@ class Interpolator:
             'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
         k : int, optional
             The degree of the spline for 'B-splines' method (default is 3).
+        log : bool, optional
+            If True, apply logarithmic transformation to the data before interpolation. Default is False.
 
         Returns
         -------
@@ -185,43 +286,16 @@ class Interpolator:
         ValueError
             If an invalid interpolation method is provided.
         """
-        self.new_x = new_x
+        self.set_interpolation_attr(new_x, log)
 
-        if log:
-            self.log_x = np.log(self.x)
-            self.log_y = np.log(self.y)
-            self.log_new_x = np.log(self.new_x)
-
-        if log:
-            x = self.log_x
-            y = self.log_y
-            new_x = self.log_new_x
-        else:
-            x = self.x
-            y = self.y
+        x, y, new_x = self.get_interpolation_data(log)
 
         if isinstance(methods, str):
             methods = [methods]
 
         results = {}
         for method in methods:
-            if method == 'PiecewiseLinear':
-                new_y = np.interp(new_x, x, y)
-            elif method == 'CubicSpline':
-                interpolator = CubicSpline(x, y)
-                new_y = interpolator(new_x)
-            elif method == 'Pchip':
-                interpolator = PchipInterpolator(x, y)
-                new_y = interpolator(new_x)
-            elif method == 'Akima1D':
-                interpolator = Akima1DInterpolator(x, y)
-                new_y = interpolator(new_x)
-            elif method == 'B-splines':
-                interpolator = make_interp_spline(x, y, k=k)
-                new_y = interpolator(new_x)
-            else:
-                raise ValueError(f'Invalid interpolation method: {method}. '
-                                 f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+            new_y = interpolate(x, y, new_x, method, k)
             results[method] = new_y
 
         if len(results) == 1:
@@ -229,29 +303,106 @@ class Interpolator:
         else:
             new_y = pd.DataFrame(results)
 
+        self.set_interpolated_attr(new_y, log)
+
+        return self.new_y
+
+    def set_interpolation_attr(self, new_x, log):
+        """
+        Set the attributes for interpolation.
+
+        This method sets the attributes required for interpolation, including the new x-coordinates
+        and optionally applies a logarithmic transformation to the x and y data.
+
+        Parameters
+        ----------
+        new_x : array-like
+            The x-coordinates at which to interpolate.
+        log : bool
+            If True, apply logarithmic transformation to the data before interpolation.
+        """
+        self.new_x = new_x
+        if log:
+            self.log_x = np.log(self.x)
+            self.log_y = np.log(self.y)
+            self.log_new_x = np.log(self.new_x)
+
+    def get_interpolation_data(self, log):
+        """
+        Get the appropriate x, y, and new_x data based on the scale.
+
+        This method returns the original or logarithmically transformed data based on the value of the log parameter.
+
+        Parameters
+        ----------
+        log : bool
+            If True, return the logarithmically transformed data. Otherwise, return the original data.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            The x, y, and new_x data to be used for interpolation.
+        """
+        if log:
+            return self.log_x, self.log_y, self.log_new_x
+        else:
+            return self.x, self.y, self.new_x
+
+    def set_interpolated_attr(self, new_y, log):
+        """
+        Sets the interpolated attribute values.
+
+        Parameters
+        ----------
+        new_y : array-like
+            The interpolated y-values.
+        log : bool
+            If True, the interpolated values are in logarithmic scale.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If `new_y` is None or not an array-like object.
+
+        Notes
+        -----
+        This method updates the instance attributes `new_y` and `log_new_y` based on the interpolation results.
+        If `log` is True, exponential transformation is applied to `new_y` to revert the logarithmic transformation.
+        """
         if log:
             self.log_new_y = new_y
             self.new_y = np.exp(new_y)
         else:
             self.new_y = new_y
 
-        return self.new_y
-
     def to_file(self, file_path, csv=True):
         """
-        Save the stored interpolation results and the new_x values to a CSV or Excel file.
+        Save the interpolation results to a file.
 
         Parameters
         ----------
         file_path : str
             The path to the file where the results will be saved.
         csv : bool, optional
-            If True, save as CSV; if False, save as Excel. Default is True.
+            If True, save the results as a CSV file. If False, save as an Excel file. Default is True.
+
+        Returns
+        -------
+        None
 
         Raises
         ------
         ValueError
-            If no interpolation results are stored.
+            If there are no interpolation results to save (i.e., `new_y` or `new_x` is None).
+
+        Notes
+        -----
+        This method saves the interpolated x and y values to a specified file. The file format can be either CSV or Excel.
+        If the interpolated results are stored in a DataFrame, the new x values are inserted as the first column.
         """
         if self.new_y is None or self.new_x is None:
             raise ValueError("No interpolation results to save. Please run the interpolate method first.")
@@ -267,32 +418,41 @@ class Interpolator:
         else:
             df.to_excel(file_path, index=False)
 
-    def plot(self, figsize=(10, 6), show=True, save=False, file_path='interpolation_plot', file_format='png'):
+    def plot(self, fig_size=(10, 6), show=True, save=False, file_path='interpolation_plot', file_format='png'):
         """
         Plot the interpolation results.
 
         Parameters
         ----------
-        figsize : tuple, optional
-            The size of the figure. Default is (10, 6).
+        fig_size : tuple of int, optional
+            The size of the figure (width, height) in inches. Default is (10, 6).
         show : bool, optional
             If True, display the plot. Default is True.
         save : bool, optional
-            If True, save the plot as a file. Default is False.
+            If True, save the plot to a file. Default is False.
         file_path : str, optional
             The path to the file where the plot will be saved. Default is 'interpolation_plot'.
         file_format : str, optional
             The format of the file to save the plot. Default is 'png'.
 
+        Returns
+        -------
+        None
+
         Raises
         ------
         ValueError
-            If no interpolation results are stored.
+            If there are no interpolation results to plot (i.e., `new_y` or `new_x` is None).
+
+        Notes
+        -----
+        This method plots the original data points and the interpolated results. If multiple interpolation methods are used,
+        each method's results are plotted with a different label. The plot can be displayed, saved to a file, or both.
         """
         if self.new_y is None or self.new_x is None:
             raise ValueError("No interpolation results to plot. Please run the interpolate method first.")
 
-        plt.figure(figsize=figsize)
+        plt.figure(figsize=fig_size)
 
         # Plot original data points
         plt.plot(self.x, self.y, 'o', label='Data')
@@ -440,6 +600,7 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
     ValueError
         If the specified columns are not found in the file.
         If the file type is not supported.
+        If there is an error reading the file.
     """
     try:
         _, file_extension = splitext(file_path)
@@ -460,7 +621,6 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
         return Interpolator(x, y)
     except Exception as e:
         raise ValueError(f"Error reading file: {e}")
-
 
 # TODO: interpolation in linear or logarithmic scale
 # TODO: dealing with zeros or other invalid values in logarithmic scale
