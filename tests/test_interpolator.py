@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
-from src.spectrometry.interpolator import Interpolator, read_file
+from src.spectrometry.interpolator import Interpolator, read_file, interpolate
 
 
 class TestInterpolator:
@@ -73,45 +73,45 @@ class TestInterpolator:
             interpolator = Interpolator(x=[1, 2, 3], y=[4, 5, 6])
             assert str(interpolator) == "Interpolator with:\nx: [1 2 3]\ny: [4 5 6]"
 
-    class TestInterpolate:
-        def setup_method(self):
-            self.x = np.array([0, 1, 2, 3])
-            self.y = np.array([0, 10, 20, 30])
-            self.new_x = 1.5
-            self.interpolator = Interpolator(x=self.x, y=self.y)
-
-        def test_piecewise_linear(self):
-            expected_y = np.interp(self.new_x, self.x, self.y)
-            result_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear')
-            assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-
-        def test_cubic_spline(self):
-            interpolator = CubicSpline(self.x, self.y)
-            expected_y = interpolator(self.new_x)
-            result_y = self.interpolator.interpolate(self.new_x, 'CubicSpline')
-            assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-
-        def test_pchip(self):
-            interpolator = PchipInterpolator(self.x, self.y)
-            expected_y = interpolator(self.new_x)
-            result_y = self.interpolator.interpolate(self.new_x, 'Pchip')
-            assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-
-        def test_akima1d(self):
-            interpolator = Akima1DInterpolator(self.x, self.y)
-            expected_y = interpolator(self.new_x)
-            result_y = self.interpolator.interpolate(self.new_x, 'Akima1D')
-            assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-
-        def test_b_splines(self):
-            interpolator = make_interp_spline(self.x, self.y)
-            expected_y = interpolator(self.new_x)
-            result_y = self.interpolator.interpolate(self.new_x, 'B-splines')
-            assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
-
-        def test_invalid_method(self):
-            with pytest.raises(ValueError, match="Invalid interpolation method"):
-                self.interpolator.interpolate(self.new_x, 'InvalidMethod')
+    # class TestInterpolate:
+    #     def setup_method(self):
+    #         self.x = np.array([0, 1, 2, 3])
+    #         self.y = np.array([0, 10, 20, 30])
+    #         self.new_x = 1.5
+    #         self.interpolator = Interpolator(x=self.x, y=self.y)
+    #
+    #     def test_piecewise_linear(self):
+    #         expected_y = np.interp(self.new_x, self.x, self.y)
+    #         result_y = self.interpolator.interpolate(self.new_x, 'PiecewiseLinear')
+    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+    #
+    #     def test_cubic_spline(self):
+    #         interpolator = CubicSpline(self.x, self.y)
+    #         expected_y = interpolator(self.new_x)
+    #         result_y = self.interpolator.interpolate(self.new_x, 'CubicSpline')
+    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+    #
+    #     def test_pchip(self):
+    #         interpolator = PchipInterpolator(self.x, self.y)
+    #         expected_y = interpolator(self.new_x)
+    #         result_y = self.interpolator.interpolate(self.new_x, 'Pchip')
+    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+    #
+    #     def test_akima1d(self):
+    #         interpolator = Akima1DInterpolator(self.x, self.y)
+    #         expected_y = interpolator(self.new_x)
+    #         result_y = self.interpolator.interpolate(self.new_x, 'Akima1D')
+    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+    #
+    #     def test_b_splines(self):
+    #         interpolator = make_interp_spline(self.x, self.y)
+    #         expected_y = interpolator(self.new_x)
+    #         result_y = self.interpolator.interpolate(self.new_x, 'B-splines')
+    #         assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+    #
+    #     def test_invalid_method(self):
+    #         with pytest.raises(ValueError, match="Invalid interpolation method"):
+    #             self.interpolator.interpolate(self.new_x, 'InvalidMethod')
 
 
 class TestReadFile:
@@ -174,3 +174,43 @@ class TestReadFile:
         def test_file_not_found(self):
             with pytest.raises(ValueError, match="Error reading file:"):
                 read_file('non_existent_file.csv')
+
+
+class TestInterpolate:
+    def setup_method(self):
+        self.x = np.array([0, 1, 2, 3])
+        self.y = np.array([0, 10, 20, 30])
+        self.new_x = 1.5
+
+    def test_piecewise_linear(self):
+        expected_y = np.interp(self.new_x, self.x, self.y)
+        result_y = interpolate(self.x, self.y, self.new_x, 'PiecewiseLinear')
+        assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+
+    def test_cubic_spline(self):
+        interpolator = CubicSpline(self.x, self.y)
+        expected_y = interpolator(self.new_x)
+        result_y = interpolate(self.x, self.y, self.new_x, 'CubicSpline')
+        assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+
+    def test_pchip(self):
+        interpolator = PchipInterpolator(self.x, self.y)
+        expected_y = interpolator(self.new_x)
+        result_y = interpolate(self.x, self.y, self.new_x, 'Pchip')
+        assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+
+    def test_akima1d(self):
+        interpolator = Akima1DInterpolator(self.x, self.y)
+        expected_y = interpolator(self.new_x)
+        result_y = interpolate(self.x, self.y, self.new_x, 'Akima1D')
+        assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+
+    def test_b_splines(self):
+        interpolator = make_interp_spline(self.x, self.y)
+        expected_y = interpolator(self.new_x)
+        result_y = interpolate(self.x, self.y, self.new_x, 'B-splines')
+        assert result_y == expected_y, f"Expected {expected_y}, but got {result_y}"
+
+    def test_invalid_method(self):
+        with pytest.raises(ValueError, match="Invalid interpolation method"):
+            interpolate(self.x, self.y, self.new_x, 'InvalidMethod')
