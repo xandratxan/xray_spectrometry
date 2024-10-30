@@ -1,3 +1,4 @@
+import os
 from io import StringIO
 from tempfile import NamedTemporaryFile
 
@@ -114,7 +115,105 @@ class TestInterpolator:
             with pytest.raises(ValueError):
                 self.interpolator._set_interpolation_attr(['a', 'b', 'c'], log=False)
 
+    class TestGetInterpolationData:
 
+        def setup_method(self):
+            # Setup common test data
+            self.x = np.array([1, 2, 3, 4, 5])
+            self.y = np.array([2, 4, 6, 8, 10])
+            self.new_x = np.array([1.5, 2.5, 3.5])
+            self.interpolator = Interpolator(x=self.x, y=self.y)
+
+        def test_get_interpolation_data_log_false(self):
+            # Test with log=False
+            self.interpolator._set_interpolation_attr(self.new_x, log=False)
+            x, y, new_x = self.interpolator._get_interpolation_data(log=False)
+            assert np.array_equal(x, self.x)
+            assert np.array_equal(y, self.y)
+            assert np.array_equal(new_x, self.new_x)
+
+        def test_get_interpolation_data_log_true(self):
+            # Test with log=True
+            self.interpolator._set_interpolation_attr(self.new_x, log=True)
+            log_x, log_y, log_new_x = self.interpolator._get_interpolation_data(log=True)
+            assert np.array_equal(log_x, np.log(self.x))
+            assert np.array_equal(log_y, np.log(self.y))
+            assert np.array_equal(log_new_x, np.log(self.new_x))
+
+    class TestSetInterpolatedAttr:
+
+        def setup_method(self):
+            # Setup common test data
+            self.x = np.array([1, 2, 3, 4, 5])
+            self.y = np.array([2, 4, 6, 8, 10])
+            self.new_x = np.array([1.5, 2.5, 3.5])
+            self.new_y = np.array([3, 5, 7])
+            self.interpolator = Interpolator(x=self.x, y=self.y)
+
+        def test_set_interpolated_attr_log_true(self):
+            # Test with log=True
+            self.interpolator._set_interpolated_attr(np.log(self.new_y), log=True)
+            assert np.array_equal(self.interpolator.log_new_y, np.log(self.new_y))
+            assert np.allclose(self.interpolator.new_y, self.new_y)
+
+        def test_set_interpolated_attr_log_false(self):
+            # Test with log=False
+            self.interpolator._set_interpolated_attr(self.new_y, log=False)
+            assert np.array_equal(self.interpolator.new_y, self.new_y)
+            assert self.interpolator.log_new_y is None
+
+    class TestToFile:
+
+        def setup_method(self):
+            # Setup common test data
+            self.x = np.array([1, 2, 3, 4, 5])
+            self.y = np.array([2, 4, 6, 8, 10])
+            self.new_x = np.array([1.5, 2.5, 3.5])
+            self.new_y = np.array([3, 5, 7])
+            self.interpolator = Interpolator(x=self.x, y=self.y)
+            self.interpolator.new_x = self.new_x
+            self.interpolator.new_y = self.new_y
+            self.csv_file_path = 'test_interpolation.csv'
+            self.excel_file_path = 'test_interpolation.xlsx'
+
+        def teardown_method(self):
+            # Remove test files if they exist
+            if os.path.exists(self.csv_file_path):
+                os.remove(self.csv_file_path)
+            if os.path.exists(self.excel_file_path):
+                os.remove(self.excel_file_path)
+
+        def test_to_file_no_interpolation_results(self):
+            # Test saving without interpolation results
+            interpolator = Interpolator(x=self.x, y=self.y)
+            with pytest.raises(ValueError):
+                interpolator.to_file(self.csv_file_path, csv=True)
+
+        def test_to_file_csv(self):
+            # Test saving to CSV file
+            self.interpolator.to_file(self.csv_file_path, csv=True)
+            assert os.path.exists(self.csv_file_path)
+            df = pd.read_csv(self.csv_file_path)
+            assert np.array_equal(df['new_x'].values, self.new_x)
+            assert np.array_equal(df['new_y'].values, self.new_y)
+
+        def test_to_file_excel(self):
+            # Test saving to Excel file
+            self.interpolator.to_file(self.excel_file_path, csv=False)
+            assert os.path.exists(self.excel_file_path)
+            df = pd.read_excel(self.excel_file_path)
+            assert np.array_equal(df['new_x'].values, self.new_x)
+            assert np.array_equal(df['new_y'].values, self.new_y)
+
+        def test_to_file_dataframe_new_y(self):
+            # Test saving when new_y is a DataFrame
+            self.interpolator.new_y = pd.DataFrame({'method1': self.new_y, 'method2': self.new_y + 1})
+            self.interpolator.to_file(self.csv_file_path, csv=True)
+            assert os.path.exists(self.csv_file_path)
+            df = pd.read_csv(self.csv_file_path)
+            assert np.array_equal(df['new_x'].values, self.new_x)
+            assert np.array_equal(df['method1'].values, self.new_y)
+            assert np.array_equal(df['method2'].values, self.new_y + 1)
 
     # class TestInterpolate:
     #     def setup_method(self):
