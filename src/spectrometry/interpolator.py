@@ -301,7 +301,18 @@ class Interpolator:
             The x-coordinates at which to interpolate.
         log : bool
             If True, apply logarithmic transformation to the data before interpolation.
+
+        Raises
+        ------
+        ValueError
+            If `new_x` is not a non-string iterable.
+            If elements of `new_x` are not numerical.
         """
+        if new_x is not None and not (isinstance(new_x, Iterable) and not isinstance(new_x, str)):
+            raise ValueError("Interpolation failed. New x-coordinates must be a non-string iterable.")
+        for i in new_x:
+            if not isinstance(i, Number):
+                raise ValueError("Interpolation failed. Elements of new x-coordinates must be numerical.")
         self.new_x = new_x
         if log:
             self.log_x = np.log(self.x)

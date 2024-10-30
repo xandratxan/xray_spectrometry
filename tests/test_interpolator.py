@@ -79,6 +79,43 @@ class TestInterpolator:
             interpolator = Interpolator(x=[1, 2, 3], y=[4, 5, 6])
             assert str(interpolator) == "Interpolator with:\nx: [1 2 3]\ny: [4 5 6]"
 
+    class TestSetInterpolationAttr:
+
+        def setup_method(self):
+            # Setup common test data
+            self.x = np.array([1, 2, 3, 4, 5])
+            self.y = np.array([2, 4, 6, 8, 10])
+            self.new_x = np.array([1.5, 2.5, 3.5])
+            self.interpolator = Interpolator(x=self.x, y=self.y)
+
+        def test_set_interpolation_attr_log_true(self):
+            # Test with log=True
+            self.interpolator._set_interpolation_attr(self.new_x, log=True)
+            assert np.array_equal(self.interpolator.new_x, self.new_x)
+            assert np.array_equal(self.interpolator.log_x, np.log(self.x))
+            assert np.array_equal(self.interpolator.log_y, np.log(self.y))
+            assert np.array_equal(self.interpolator.log_new_x, np.log(self.new_x))
+
+        def test_set_interpolation_attr_log_false(self):
+            # Test with log=False
+            self.interpolator._set_interpolation_attr(self.new_x, log=False)
+            assert np.array_equal(self.interpolator.new_x, self.new_x)
+            assert self.interpolator.log_x is None
+            assert self.interpolator.log_y is None
+            assert self.interpolator.log_new_x is None
+
+        def test_set_interpolation_attr_invalid_new_x_str(self):
+            # Test with invalid new_x (non-string iterable)
+            with pytest.raises(ValueError):
+                self.interpolator._set_interpolation_attr('hello', log=False)
+
+        def test_set_interpolation_attr_invalid_new_x_non_numeric(self):
+            # Test with invalid new_x (non-numeric)
+            with pytest.raises(ValueError):
+                self.interpolator._set_interpolation_attr(['a', 'b', 'c'], log=False)
+
+
+
     # class TestInterpolate:
     #     def setup_method(self):
     #         self.x = np.array([0, 1, 2, 3])
