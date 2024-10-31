@@ -66,35 +66,6 @@ class Interpolator:
     """
 
     def __init__(self, x=None, y=None, data=None):
-        """
-        Initialize the Interpolator object.
-
-        Parameters
-        ----------
-        x : array-like, optional
-            The x-coordinates of the data points. Default is None.
-        y : array-like, optional
-            The y-coordinates of the data points. Default is None.
-        data : dict, pandas.DataFrame, or list of array-like, optional
-            The data containing x and y coordinates. If provided, `x` and `y` should be None. Default is None.
-
-        Returns
-        -------
-        None
-
-        Raises
-        ------
-        ValueError
-            If neither `x` and `y` nor `data` are provided, or if both are provided.
-            If the provided arguments are not non-string iterables.
-            If the elements of `x` or `y` are not numerical.
-
-        Notes
-        -----
-        This method initializes the Interpolator object by setting the provided x, y, and data attributes.
-        It validates the combination and types of the arguments, extracts attributes from the data if provided,
-        and initializes additional attributes for interpolation.
-        """
         self._x, self._y, self._data = x, y, data
         self._validate_arguments_combination()
         self._validate_arguments_type()
