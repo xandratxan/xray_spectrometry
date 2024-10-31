@@ -1,8 +1,4 @@
-import warnings
-
-import numpy as np
-
-from spectrometry import read_file
+from spectrometry.interpolator import read_file
 
 x_new = [1.5, 2.5]
 
