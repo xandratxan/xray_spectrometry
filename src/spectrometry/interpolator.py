@@ -8,8 +8,6 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
-from dev.interpolator.interpolation_methods import x_new
-
 
 class Interpolator:
     """
@@ -68,9 +66,9 @@ class Interpolator:
     def __init__(self, x=None, y=None, data=None):
         self._x, self._y, self._data = x, y, data
         self._validate_arguments_combination()
-        self._validate_arguments_type()
+        # self._validate_arguments_type()
         self.x, self.y = self._extract_attributes()
-        self._validate_attributes_type()
+        # self._validate_attributes_type()
         self.new_x, self.new_y = None, None
         self.log_x, self.log_y = None, None
         self.log_new_x, self.log_new_y = None, None
@@ -282,8 +280,8 @@ class Interpolator:
         """
         if isinstance(new_x, Number):
             new_x = [new_x]
-        if not is_1d_numeric_array(x_new):
-            raise ValueError("Interpolation failed. New x-coordinates must be a one-dimensional numeric NumPy array.")
+        # if not is_1d_numeric_array(new_x):
+        #     raise ValueError("Interpolation failed. New x-coordinates must be a one-dimensional numeric NumPy array.")
         self.new_x = new_x
         if log:
             self.log_x = np.log(self.x)
