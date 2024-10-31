@@ -210,7 +210,7 @@ class Interpolator:
         """
         return f"Interpolator with:\nx: {self.x}\ny: {self.y}"
 
-    def __call__(self, new_x, methods, k=3, log=False):
+    def __call__(self, new_x, methods, log=False, **kwargs):
         """
         Interpolate the data using the specified method when the object is called.
 
@@ -224,19 +224,19 @@ class Interpolator:
         methods : str
             The interpolation method to use. Can be one of:
             'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
-        k : int, optional
-            The degree of the spline for 'B-splines' method (default is 3).
         log : bool, optional
             If True, apply logarithmic transformation to the data before interpolation. Default is False.
+        **kwargs : dict, optional
+            Additional keyword arguments to pass to the interpolation methods.
 
         Returns
         -------
         numpy.ndarray or pandas.DataFrame
             The interpolated y-coordinates.
         """
-        return self.interpolate(new_x, methods, k=k, log=log)
+        return self.interpolate(new_x, methods, log=log, **kwargs)
 
-    def interpolate(self, new_x, methods, k=3, log=False):
+    def interpolate(self, new_x, algorithms, log=False, **kwargs):
         """
         Interpolate the data using the specified methods and store the results.
 
@@ -244,13 +244,13 @@ class Interpolator:
         ----------
         new_x : array-like
             The x-coordinates at which to interpolate.
-        methods : str or list of str
+        algorithms : str or list of str
             The interpolation method(s) to use. Can be one or more of:
             'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
-        k : int, optional
-            The degree of the spline for 'B-splines' method (default is 3).
         log : bool, optional
             If True, apply logarithmic transformation to the data before interpolation. Default is False.
+        **kwargs : dict, optional
+            Additional keyword arguments to pass to the interpolation methods.
 
         Returns
         -------
@@ -271,13 +271,13 @@ class Interpolator:
 
         x, y, new_x = self._get_interpolation_data(log)
 
-        if isinstance(methods, str):
-            methods = [methods]
+        if isinstance(algorithms, str):
+            algorithms = [algorithms]
 
         results = {}
-        for method in methods:
-            new_y = interpolate(x, y, new_x, method, k)
-            results[method] = new_y
+        for algorithm in algorithms:
+            new_y = interpolate(x, y, new_x, algorithm, **kwargs)
+            results[algorithm] = new_y
 
         if len(results) == 1:
             new_y = next(iter(results.values()))
@@ -515,7 +515,7 @@ def clean_arrays(x, y):
     return x, y
 
 
-def interpolate(x, y, new_x, method, k=3):
+def interpolate(x, y, new_x, algorithm, **kwargs):
     """
     Perform interpolation using the specified method.
 
@@ -529,11 +529,11 @@ def interpolate(x, y, new_x, method, k=3):
         The y-coordinates of the data points to be used for interpolation.
     new_x : numpy.ndarray
         The x-coordinates at which to interpolate.
-    method : str
+    algorithm : str
         The interpolation method to use. Can be one of:
         'PiecewiseLinear', 'CubicSpline', 'Pchip', 'Akima1D', 'B-splines'.
-    k : int, optional
-        The degree of the spline for 'B-splines' method (default is 3).
+    **kwargs : dict, optional
+        Additional keyword arguments to pass to the interpolation methods.
 
     Returns
     -------
@@ -545,23 +545,36 @@ def interpolate(x, y, new_x, method, k=3):
     ValueError
         If an invalid interpolation method is provided.
     """
-    if method == 'PiecewiseLinear':
-        new_y = np.interp(new_x, x, y)
-    elif method == 'CubicSpline':
-        interpolator = CubicSpline(x, y)
-        new_y = interpolator(new_x)
-    elif method == 'Pchip':
-        interpolator = PchipInterpolator(x, y)
-        new_y = interpolator(new_x)
-    elif method == 'Akima1D':
-        interpolator = Akima1DInterpolator(x, y)
-        new_y = interpolator(new_x)
-    elif method == 'B-splines':
-        interpolator = make_interp_spline(x, y, k=k)
-        new_y = interpolator(new_x)
-    else:
-        raise ValueError(f'Invalid interpolation method: {method}. '
+    method_kwargs = {
+        'PiecewiseLinear': ['left', 'right', 'period'],
+        'CubicSpline': ['axis', 'bc_type', 'extrapolate'],
+        'Pchip': ['axis', 'extrapolate'],
+        'Akima1D': ['axis', 'method', 'extrapolate'],
+        'B-splines': ['k', 't', 'bc_type', 'axis', 'check_finite']
+    }
+
+    if algorithm not in method_kwargs:
+        raise ValueError(f'Invalid interpolation method: {algorithm}. '
                          f'Valid methods are: PiecewiseLinear, CubicSpline, Pchip, Akima1D, B-splines')
+
+    # Filter kwargs to pass only the relevant ones for the chosen method
+    filtered_kwargs = {key: value for key, value in kwargs.items() if key in method_kwargs[algorithm]}
+
+    if algorithm == 'PiecewiseLinear':
+        new_y = np.interp(new_x, x, y, **filtered_kwargs)
+    elif algorithm == 'CubicSpline':
+        interpolator = CubicSpline(x, y, **filtered_kwargs)
+        new_y = interpolator(new_x)
+    elif algorithm == 'Pchip':
+        interpolator = PchipInterpolator(x, y, **filtered_kwargs)
+        new_y = interpolator(new_x)
+    elif algorithm == 'Akima1D':
+        interpolator = Akima1DInterpolator(x, y, **filtered_kwargs)
+        new_y = interpolator(new_x)
+    elif algorithm == 'B-splines':
+        interpolator = make_interp_spline(x, y, **filtered_kwargs)
+        new_y = interpolator(new_x)
+
     return new_y
 
 
