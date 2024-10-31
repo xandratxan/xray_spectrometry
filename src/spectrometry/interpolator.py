@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
+from dev.interpolator.interpolation_methods import x_new
+
 
 class Interpolator:
     """
@@ -178,9 +180,8 @@ class Interpolator:
             If any element in 'x' or 'y' is not numerical.
         """
         for attr in [self.x, self.y]:
-            for i in attr:
-                if not isinstance(i, Number):
-                    raise ValueError("Interpolator constructor failed. Elements of arguments must be numerical.")
+            if not is_1d_numeric_array(attr):
+                raise ValueError("Interpolator constructor failed. Attributes x and y must be one-dimensional numeric NumPy arrays.")
 
     def __repr__(self):
         """
@@ -310,11 +311,8 @@ class Interpolator:
         """
         if isinstance(new_x, Number):
             new_x = [new_x]
-        if new_x is not None and not (isinstance(new_x, Iterable) and not isinstance(new_x, str)):
-            raise ValueError("Interpolation failed. New x-coordinates must be a non-string iterable.")
-        for i in new_x:
-            if not isinstance(i, Number):
-                raise ValueError("Interpolation failed. Elements of new x-coordinates must be numerical.")
+        if not is_1d_numeric_array(x_new):
+            raise ValueError("Interpolation failed. New x-coordinates must be a one-dimensional numeric NumPy array.")
         self.new_x = new_x
         if log:
             self.log_x = np.log(self.x)
@@ -627,6 +625,34 @@ def read_file(file_path, sheet_name=0, x_col=0, y_col=1, header=True):
     except Exception as e:
         raise ValueError(f"Error reading file: {e}")
 
+
+def is_1d_numeric_array(arr):
+    """
+    Check if the input is a one-dimensional NumPy array with all numeric elements.
+
+    Parameters
+    ----------
+    arr : any
+        The input to check.
+
+    Returns
+    -------
+    bool
+        True if the input is a one-dimensional NumPy array with all numeric elements, False otherwise.
+    """
+    # Check if the input is a NumPy array
+    if not isinstance(arr, np.ndarray):
+        return False
+
+    # Check if the array is one-dimensional
+    if arr.ndim != 1:
+        return False
+
+    # Check if all elements are numeric
+    if not np.issubdtype(arr.dtype, np.number):
+        return False
+
+    return True
+
 # TODO: In docstrings: detailed description or notes?
 # TODO: Docs: line comments to explain the code
-# TODO: add support to optional arguments of scipy interpolation methods

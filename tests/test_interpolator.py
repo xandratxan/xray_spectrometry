@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from scipy.interpolate import CubicSpline, PchipInterpolator, Akima1DInterpolator, make_interp_spline
 
-from src.spectrometry.interpolator import Interpolator, read_file, interpolate, clean_arrays
+from src.spectrometry.interpolator import Interpolator, read_file, interpolate, clean_arrays, is_1d_numeric_array
 
 
 class TestInterpolator:
@@ -405,3 +405,41 @@ class TestCleanArrays:
             cleaned_x, cleaned_y = clean_arrays(x, y)
         assert cleaned_x.size == 0
         assert cleaned_y.size == 0
+
+
+class TestIsValid1DNumericArray:
+    def test_valid_1d_numeric_array(self):
+        arr = np.array([1, 2, 3, 4, 5])
+        assert is_1d_numeric_array(arr) == True
+
+    def test_valid_1d_float_array(self):
+        arr = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+        assert is_1d_numeric_array(arr) == True
+
+    def test_empty_array(self):
+        arr = np.array([])
+        assert is_1d_numeric_array(arr) == True
+
+    def test_invalid_2d_array(self):
+        arr = np.array([[1, 2], [3, 4]])
+        assert is_1d_numeric_array(arr) == False
+
+    def test_invalid_string_array(self):
+        arr = np.array(['a', 'b', 'c'])
+        assert is_1d_numeric_array(arr) == False
+
+    def test_invalid_mixed_type_array(self):
+        arr = np.array([1, 'b', 3])
+        assert is_1d_numeric_array(arr) == False
+
+    def test_invalid_list(self):
+        arr = [1, 2, 3, 4, 5]
+        assert is_1d_numeric_array(arr) == False
+
+    def test_invalid_none(self):
+        arr = None
+        assert is_1d_numeric_array(arr) == False
+
+    def test_invalid_dict(self):
+        arr = {'a': 1, 'b': 2}
+        assert is_1d_numeric_array(arr) == False
